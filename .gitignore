@@ -1,0 +1,16 @@
+/MapReduce/source_data/
+/MapReduce/reducer_folder/
+/MapReduce/map_folder/
+/MapReduce/relative_result.txt
+/MapReduce/result.txt
+/MapReduce/sorted_relative_result.txt
+/MapReduce/sorted_relative_result.txt.bak
+/MapReduce/sorted_result.txt
+/MapReduce/sorted_result_path.txt
+/MapReduce/words.txt
+/PageRank/mapping.txt
+/PageRank/tmp.txt
+/PageRank/ans.txt
+/PageRank/ans2.txt
+/PageRank/ans3.txt
+/PageRank/ans4.txt
