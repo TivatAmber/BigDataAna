@@ -7,8 +7,7 @@ from process import Mapper, Reducer, Shuffler
 folder_start_index = 1
 folder_num = 9
 processes_num = 10
-mapper_num = 9
-shuffler_num = 1
+mapper_num = shuffler_num = 9
 reducer_num = 3
 result_path = "result.txt"
 sorted_result_path = "sorted_result.txt"
@@ -42,11 +41,12 @@ def shuffler_process(mappers_result: list[list[tuple[tuple[str, str], int]]]) ->
     shufflers = []
     shuffler_pool: multiprocessing.pool.Pool = multiprocessing.Pool(processes=processes_num)
     shufflers_result = []
-    shuffler_len = ((max_len := len(mappers_result)) + shuffler_num - 1) // shuffler_num
-    for now_result_index in range(0, max_len, shuffler_len):
+    # shuffler_len = ((max_len := len(mappers_result)) + shuffler_num - 1) // shuffler_num
+    for index, now_result in enumerate(mappers_result):
         shufflers.append(Shuffler(
-            now_result_index // shuffler_len + 1,
-            mappers_result[now_result_index: min(now_result_index + shuffler_len, max_len)],
+            index + 1,
+            now_result,
+            reducer_num
         ))
     for shuffler in shufflers:
         shufflers_result.append(shuffler_pool.apply_async(shuffler.get_result))
@@ -56,15 +56,15 @@ def shuffler_process(mappers_result: list[list[tuple[tuple[str, str], int]]]) ->
     return shufflers_result
 
 
-def reduce_process(sorted_shuffled_data: list[tuple[str, list[int]]]) -> list[dict[str, int]]:
+def reduce_process(shufflers_result: list[list[tuple[str, list[int]]]]) -> list[dict[str, int]]:
     reducers = []
     reducer_pool: multiprocessing.pool.Pool = multiprocessing.Pool(processes=processes_num)
     reducers_result = []
-    reducer_len = ((max_len := len(sorted_shuffled_data)) + reducer_num - 1) // reducer_num
-    for now_result_index in range(0, max_len, reducer_len):
+    shufflers_result = list(zip(*shufflers_result))
+    for index, now_result_index in enumerate(shufflers_result):
         reducers.append(Reducer(
-            now_result_index // reducer_len + 1,
-            sorted_shuffled_data[now_result_index: min(now_result_index + reducer_len, max_len)],
+            index + 1,
+            shufflers_result[index],
             reducer_folder_path
         ))
     for reducer in reducers:
@@ -115,12 +115,17 @@ def multi_processing_work():
     print(f"Mapper Time:{time.time() - now}, Overall Time: {time.time() - start_time}")
 
     now = time.time()
-    shuffler_result = shuffler_process(mappers_result=mappers_result)
+    shufflers_result = shuffler_process(mappers_result=mappers_result)
     print(f"Shuffle Time:{time.time() - now}, Overall Time: {time.time() - start_time}")
 
     now = time.time()
-    sorted_shuffled_data, relative_result = shuffler_result[0]
-    reducers_result = reduce_process(sorted_shuffled_data=sorted_shuffled_data)
+
+    relative_result = {}
+    for shuffler_result in shufflers_result:
+        relative_result.update(shuffler_result[1])
+    shufflers_result = [shuffler_result[0] for shuffler_result in shufflers_result]
+
+    reducers_result = reduce_process(shufflers_result=shufflers_result)
     print(f"Reduce Time:{time.time() - now}, Overall Time: {time.time() - start_time}")
 
     now = time.time()

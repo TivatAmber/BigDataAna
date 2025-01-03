@@ -1,6 +1,5 @@
 import collections
-from multiprocessing import Process
-from multiprocessing.pool import ApplyResult
+from functions import hash_str
 
 import functions
 import os
@@ -39,13 +38,17 @@ class Mapper:
 
 
 class Reducer:
-    def __init__(self, reducer_index: int, data: list[tuple[str, list[int]]], save_path_folder: str) -> None:
+    def __init__(self, reducer_index: int, data: list[list[tuple[str, list[int]]]], save_path_folder: str) -> None:
         self.reducer_index = reducer_index
         self.data = data
         self.save_path = os.path.join(save_path_folder, f"ans{reducer_index}.txt")
 
     def get_result(self) -> dict[str, int]:
-        ret = {key: sum(values) for key, values in self.data}
+        ret = collections.defaultdict(int)
+        for dic in self.data:
+            for key, values in dic:
+                ret[key] += sum(values)
+        # ret = {key: sum(values) for key, values in self.data}
         return ret
 
     def save_result(self) -> dict[str, int]:
@@ -56,18 +59,16 @@ class Reducer:
 
 
 class Shuffler:
-    def __init__(self, shuffler_index: int, data: list[list[tuple[tuple[str, str], int]]]):
+    def __init__(self, shuffler_index: int, data: list[tuple[tuple[str, str], int]], target_num: int):
         self.shuffler_index = shuffler_index
         self.data = data
+        self.target_num = target_num
 
-    def get_result(self) -> (list[tuple[str, list[int]]], dict[str, set[str]]):
-        shuffled_data = (collections.defaultdict(list), collections.defaultdict(set))
-        for mapper_result in self.data:
-            for key, value in mapper_result:
-                shuffled_data[0][key[1]].append(value)
-                shuffled_data[1][key[0]].add(key[1])
-
-        relative_result = shuffled_data[1]
-        sorted_shuffled_data = {key: sorted(values) for key, values in shuffled_data[0].items()}
-        sorted_shuffled_data = list(sorted_shuffled_data.items())
+    def get_result(self) -> (list[list[tuple[str, list[int]]]], dict[str, set[str]]):
+        shuffled_data = [collections.defaultdict(list) for _ in range(self.target_num)]
+        relative_result = collections.defaultdict(set)
+        for key, value in self.data:
+            shuffled_data[hash_str(key[1]) % self.target_num][key[1]].append(value)
+            relative_result[key[0]].add(key[1])
+        sorted_shuffled_data = [list(data.items()) for data in shuffled_data]
         return sorted_shuffled_data, relative_result

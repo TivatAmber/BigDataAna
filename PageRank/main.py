@@ -85,7 +85,7 @@ if __name__ == '__main__':
 
     lst_val = np.zeros_like(val)
     iteration_time = 0
-    while abs(lst_val @ val.T - val @ val.T) > epsilon:
+    while np.any(np.abs(lst_val - val) > epsilon):
         lst_val = val
         val = beta * val @ basic_matrix + (1 - beta) * bias
         iteration_time += 1

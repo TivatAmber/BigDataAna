@@ -30,6 +30,9 @@ def needed_char(x: str) -> bool:
     return False
 
 
+def hash_str(x: str) -> int:
+    return sum([ord(char) for char in x])
+
 def get_file_alnum_as_list(file_path: str) -> list[str]:
     now_file = get_file(file_path).lower()
     now_file = re.findall(r'\w+', now_file)
